@@ -1,17 +1,21 @@
 services:
   - type: web
     name: sqlite-guard
-    runtime: node
-    plan: starter
+    runtime: docker
+    plan: standard
     region: oregon
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: GUARD_DB_DIR
         value: /var/data
+      - key: GUARD_MODEL_EXTENSION_PATH
+        value: /app/extensions/ai
+      - key: GUARD_MODEL_PATH
+        value: /app/models/smollm2-135m-instruct-q8_0.gguf
+      - key: GUARD_MODEL_GPU_LAYERS
+        value: "0"
     disk:
       name: guard-audit-data
       mountPath: /var/data

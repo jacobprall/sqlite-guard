@@ -17,6 +17,11 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const DB_DIR = process.env.GUARD_DB_DIR ?? '/var/data';
 const DB_PATH = `${DB_DIR}/guard-audit.db`;
 
+// Model config — set via env vars, all optional
+const MODEL_EXTENSION_PATH = process.env.GUARD_MODEL_EXTENSION_PATH;  // e.g. /app/extensions/ai
+const MODEL_PATH = process.env.GUARD_MODEL_PATH;                      // e.g. /app/models/smollm2.gguf
+const MODEL_GPU_LAYERS = parseInt(process.env.GUARD_MODEL_GPU_LAYERS ?? '0', 10);
+
 const DEFAULT_POLICY: PolicyDefinition = {
   name: 'default',
   rules: [
@@ -35,7 +40,24 @@ console.log(`[guard] Initializing with audit database at ${DB_PATH}`);
 const guard = new Guard({
   db_path: DB_PATH,
   policy: DEFAULT_POLICY,
+  ...(MODEL_EXTENSION_PATH && MODEL_PATH ? {
+    model: {
+      extension_path: MODEL_EXTENSION_PATH,
+      model_path: MODEL_PATH,
+      gpu_layers: MODEL_GPU_LAYERS,
+    },
+  } : {}),
 });
+
+// Load model if configured
+if (MODEL_EXTENSION_PATH && MODEL_PATH) {
+  console.log(`[guard] Loading GGUF model from ${MODEL_PATH}...`);
+  const t0 = Date.now();
+  guard.loadModel();
+  console.log(`[guard] Model loaded in ${Date.now() - t0}ms`);
+} else {
+  console.log(`[guard] No model configured — using regex classification only`);
+}
 console.log(`[guard] Ready`);
 
 // ── App ─────────────────────────────────────────────────────────────
@@ -66,6 +88,16 @@ app.get('/', (c) => {
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok' });
+});
+
+app.get('/status', (c) => {
+  return c.json({
+    status: 'ok',
+    model_loaded: guard.modelLoaded,
+    model_path: MODEL_PATH ?? null,
+    db_path: DB_PATH,
+    audit_summary: guard.summarizeAudit(),
+  });
 });
 
 // ── Classify ────────────────────────────────────────────────────────

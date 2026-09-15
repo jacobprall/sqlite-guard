@@ -145,8 +145,15 @@ export interface GuardConfig {
   /** Custom classification patterns beyond the built-ins */
   custom_patterns?: PatternDefinition[];
 
-  /** Use sqlite-ai for on-device ML classification (requires extension loaded) */
-  use_ai_classifier?: boolean;
+  /** Local GGUF model config for AI-powered classification via sqlite-ai */
+  model?: {
+    /** Path to the sqlite-ai extension binary (without file extension) */
+    extension_path: string;
+    /** Path to the GGUF model file */
+    model_path: string;
+    /** GPU layers (0 = CPU only, default 0) */
+    gpu_layers?: number;
+  };
 
   /** Path to the adam SQLite database to wrap */
   adam_db_path?: string;

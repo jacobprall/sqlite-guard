@@ -11,6 +11,7 @@ import type {
 } from './types.js';
 import { GuardDatabase } from './db/database.js';
 import { Classifier } from './classify/classifier.js';
+import { ModelClassifier } from './classify/model-classifier.js';
 import { PolicyEngine } from './policy/engine.js';
 import { AuditLog } from './audit/log.js';
 import { AdamAdapter } from './adapter/adam.js';
@@ -54,12 +55,18 @@ export class Guard {
 
   private readonly guardDb: GuardDatabase;
   private adamAdapter: AdamAdapter | null = null;
+  private modelClassifier: ModelClassifier | null = null;
 
   constructor(config: GuardConfig) {
     this.guardDb = new GuardDatabase(config.db_path);
     this.classifier = new Classifier(config.custom_patterns);
     this.policy = new PolicyEngine(config.policy, this.classifier);
     this.audit = new AuditLog(this.guardDb.db);
+
+    // Initialize model classifier if configured
+    if (config.model) {
+      this.modelClassifier = new ModelClassifier(config.model);
+    }
 
     // Persist the policy
     this.guardDb.db.prepare(`
@@ -69,6 +76,24 @@ export class Guard {
       name: config.policy.name,
       definition: JSON.stringify(config.policy),
     });
+  }
+
+  // ── Model lifecycle ──────────────────────────────────────────────
+
+  /**
+   * Load the GGUF model into memory. Call once at startup.
+   * The model stays resident for the lifetime of the Guard instance.
+   * No-op if no model was configured.
+   */
+  loadModel(): void {
+    if (!this.modelClassifier) return;
+    this.modelClassifier.load();
+    this.classifier.setModelClassifier(this.modelClassifier);
+  }
+
+  /** Whether a model classifier is loaded and active */
+  get modelLoaded(): boolean {
+    return this.modelClassifier !== null;
   }
 
   // ── Classification ──────────────────────────────────────────────
@@ -202,6 +227,7 @@ export class Guard {
    * Close the guard database.
    */
   close(): void {
+    this.modelClassifier?.close();
     this.guardDb.close();
   }
 

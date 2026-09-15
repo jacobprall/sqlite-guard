@@ -1,5 +1,6 @@
 export { Guard } from './guard.js';
 export { Classifier } from './classify/classifier.js';
+export { ModelClassifier } from './classify/model-classifier.js';
 export { PolicyEngine } from './policy/engine.js';
 export { AuditLog } from './audit/log.js';
 export { AdamAdapter } from './adapter/adam.js';
