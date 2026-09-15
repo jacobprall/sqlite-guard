@@ -18,9 +18,12 @@ const DB_DIR = process.env.GUARD_DB_DIR ?? '/var/data';
 const DB_PATH = `${DB_DIR}/guard-audit.db`;
 
 // Model config — set via env vars, all optional
-const MODEL_EXTENSION_PATH = process.env.GUARD_MODEL_EXTENSION_PATH;  // e.g. /app/extensions/ai
-const MODEL_PATH = process.env.GUARD_MODEL_PATH;                      // e.g. /app/models/smollm2.gguf
+const MODEL_EXTENSION_PATH = process.env.GUARD_MODEL_EXTENSION_PATH;
+const MODEL_PATH = process.env.GUARD_MODEL_PATH;
 const MODEL_GPU_LAYERS = parseInt(process.env.GUARD_MODEL_GPU_LAYERS ?? '0', 10);
+
+// API auth — set GUARD_API_KEY to require Bearer token on all mutating endpoints
+const API_KEY = process.env.GUARD_API_KEY;
 
 const DEFAULT_POLICY: PolicyDefinition = {
   name: 'default',
@@ -65,6 +68,21 @@ console.log(`[guard] Ready`);
 const app = new Hono();
 
 app.use('*', cors());
+
+// API key auth middleware — skips health + root, protects everything else
+if (API_KEY) {
+  app.use('*', async (c, next) => {
+    const path = new URL(c.req.url).pathname;
+    if (path === '/' || path === '/health') return next();
+
+    const auth = c.req.header('Authorization');
+    if (!auth || auth !== `Bearer ${API_KEY}`) {
+      return c.json({ error: 'Unauthorized — set Authorization: Bearer <key>' }, 401);
+    }
+    return next();
+  });
+  console.log(`[guard] API key auth enabled`);
+}
 
 // ── Health ──────────────────────────────────────────────────────────
 

@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: GUARD_API_KEY
+        generateValue: true
       - key: GUARD_DB_DIR
         value: /var/data
       - key: GUARD_MODEL_EXTENSION_PATH
