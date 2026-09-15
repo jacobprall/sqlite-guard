@@ -1,0 +1,59 @@
+{
+  "name": "sqlite-guard",
+  "version": "0.1.0",
+  "description": "Egress firewall and audit log for sqlite-ai agent systems. Classify data, enforce policies, log every byte that leaves the device.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch",
+    "dev:server": "npx tsx src/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "sqlite",
+    "ai",
+    "agent",
+    "privacy",
+    "egress",
+    "firewall",
+    "audit",
+    "pii",
+    "classification",
+    "local-first",
+    "sqlite-ai",
+    "adam"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "better-sqlite3": "^11.0.0",
+    "hono": "^4.13.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

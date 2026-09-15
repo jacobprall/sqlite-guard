@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: sqlite-guard
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GUARD_DB_DIR
+        value: /var/data
+    disk:
+      name: guard-audit-data
+      mountPath: /var/data
+      sizeGB: 1
