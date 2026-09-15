@@ -2,7 +2,7 @@ services:
   - type: web
     name: sqlite-guard
     runtime: docker
-    plan: standard
+    plan: 4c-16g
     region: oregon
     healthCheckPath: /health
     envVars:
@@ -13,10 +13,10 @@ services:
       - key: GUARD_MODEL_EXTENSION_PATH
         value: /app/extensions/ai
       - key: GUARD_MODEL_PATH
-        value: /app/models/smollm2-135m-instruct-q8_0.gguf
+        value: /app/models/qwen2.5-7b-instruct-q4_k_m.gguf
       - key: GUARD_MODEL_GPU_LAYERS
         value: "0"
     disk:
       name: guard-audit-data
       mountPath: /var/data
-      sizeGB: 1
+      sizeGB: 10

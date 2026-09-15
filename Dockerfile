@@ -27,10 +27,10 @@ RUN mkdir -p /app/extensions && \
     rm /tmp/sqlite-ai.tar.gz && \
     ls -la /app/extensions/
 
-# Download SmolLM2-135M-Instruct GGUF (138MB, CPU-friendly, 1-2GB RAM)
+# Download Qwen2.5-7B-Instruct Q4_K_M (~4.7GB, single file)
 RUN mkdir -p /app/models && \
-    curl -fSL "https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct-GGUF/resolve/main/smollm2-135m-instruct-q8_0.gguf" \
-      -o /app/models/smollm2-135m-instruct-q8_0.gguf && \
+    curl -fSL "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf" \
+      -o /app/models/qwen2.5-7b-instruct-q4_k_m.gguf && \
     ls -lh /app/models/
 
 # Install production dependencies only
@@ -46,7 +46,7 @@ RUN mkdir -p /var/data
 ENV NODE_ENV=production
 ENV GUARD_DB_DIR=/var/data
 ENV GUARD_MODEL_EXTENSION_PATH=/app/extensions/ai
-ENV GUARD_MODEL_PATH=/app/models/smollm2-135m-instruct-q8_0.gguf
+ENV GUARD_MODEL_PATH=/app/models/qwen2.5-7b-instruct-q4_k_m.gguf
 ENV GUARD_MODEL_GPU_LAYERS=0
 
 EXPOSE 3000
