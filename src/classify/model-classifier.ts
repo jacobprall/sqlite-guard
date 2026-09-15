@@ -38,8 +38,10 @@ export interface ModelClassifierConfig {
  * loaded. The model stays resident after the first load.
  */
 export class ModelClassifier {
-  private readonly db: Database.Database;
+  private db: Database.Database;
   private loaded = false;
+  private busy = false;
+  private callCount = 0;
   private readonly config: Required<ModelClassifierConfig>;
 
   constructor(config: ModelClassifierConfig) {
@@ -63,7 +65,7 @@ export class ModelClassifier {
 
     console.log(`[model-classifier] Loading model from ${this.config.model_path}`);
     this.db.exec(
-      `SELECT llm_model_load('${escapeSql(this.config.model_path)}', 'gpu_layers=${this.config.gpu_layers}')`
+      `SELECT llm_model_load('${escapeSql(this.config.model_path)}', 'gpu_layers=${this.config.gpu_layers},use_mmap=1')`
     );
 
     console.log(`[model-classifier] Creating text generation context`);
@@ -80,7 +82,22 @@ export class ModelClassifier {
   classify(content: string): ClassificationResult | null {
     if (!this.loaded) return null;
 
+    // sqlite-ai's text generation is not reentrant — serialize calls
+    if (this.busy) {
+      console.warn(`[model-classifier] Skipping: inference already in progress`);
+      return null;
+    }
+
+    this.busy = true;
     try {
+      // sqlite-ai's text generation context crashes on reuse (SIGSEGV).
+      // Workaround: reload the entire model on a fresh database each call.
+      // This costs ~500-800ms per call but avoids the native segfault.
+      if (this.callCount > 0) {
+        this.reload();
+      }
+      this.callCount++;
+
       const prompt = CLASSIFICATION_PROMPT + content.slice(0, 2000);
 
       const row = this.db
@@ -93,11 +110,27 @@ export class ModelClassifier {
     } catch (err) {
       console.warn(`[model-classifier] Inference failed:`, err);
       return null;
+    } finally {
+      this.busy = false;
     }
   }
 
+  /**
+   * Reload the model on a fresh database to work around the sqlite-ai
+   * SIGSEGV on context reuse.
+   */
+  private reload(): void {
+    try { this.db.close(); } catch { /* ignore */ }
+    this.db = new Database(':memory:');
+    this.db.loadExtension(this.config.extension_path);
+    this.db.exec(
+      `SELECT llm_model_load('${escapeSql(this.config.model_path)}', 'gpu_layers=${this.config.gpu_layers},use_mmap=1')`
+    );
+    this.db.exec(`SELECT llm_context_create_textgen()`);
+  }
+
   close(): void {
-    this.db.close();
+    try { this.db.close(); } catch { /* ignore */ }
   }
 }
 
